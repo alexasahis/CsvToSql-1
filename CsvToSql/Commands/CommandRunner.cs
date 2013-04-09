@@ -12,7 +12,7 @@ namespace CsvToSql.Commands
         private Command _command;
         private SqlCommand _sqlCommand;
 
-      
+
         public void Initialise(Command command)
         {
             _sqlCommand = new SqlCommand();
@@ -41,7 +41,12 @@ namespace CsvToSql.Commands
         {
             foreach (var param in _command.Parameters)
             {
-                _sqlCommand.Parameters[param.Name].Value = parser[param.DatafileColumn];
+                if(parser[param.DatafileColumn] == null)
+                    _sqlCommand.Parameters[param.Name].Value = DBNull.Value;
+                else
+                {
+                    _sqlCommand.Parameters[param.Name].Value = parser[param.DatafileColumn].SqlValue(_sqlCommand.Parameters[param.Name].SqlDbType);
+                }
             }
         }
 
@@ -55,7 +60,7 @@ namespace CsvToSql.Commands
             return string.Format("UPDATED {0} : Id {1}", _command.Datafile, GetId(parser));
         }
 
-        
+
 
         public virtual string GetId(GenericParser parser)
         {
@@ -86,7 +91,7 @@ namespace CsvToSql.Commands
                 parser.MaxRows = 1000000;
                 parser.TextQualifier = '\"';
 
-               
+
 
                 _sqlCommand.Connection.Open();
 
