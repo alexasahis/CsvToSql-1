@@ -1,12 +1,10 @@
 [
   {
-    Sql: "update tblcustomer set customerForename = @Forename where customerID = @Id", //sql statement to be run
-    Datafile: "Customers.csv", //Name of datafile (will look in application path)
+    Sql: "update tblcustomer set customerForename = @Forename where customerID = @Id", 
+    Datafile: "Customers.csv", 
     Parameters: 
     [
-      //Parameter Name and Type mandatory
-      //DatafileColumn = the name of the corresponding column in your datafile, non mandatory, defaults fo Parameter Name
-      //IsIdentity = non-mandatory, marks column as identifier - can be any column - just used for logging
+
       {Name: "@Forename", Type: "Varchar(50)", DatafileColumn: "Forename"},
       {Name: "@Id", Type: "int", IsIdentity: true}
     ]

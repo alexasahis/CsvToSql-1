@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using CsvToSql.DbAdaptors;
 using GenericParsing;
 
 namespace CsvToSql.Commands
@@ -10,54 +12,37 @@ namespace CsvToSql.Commands
     public class CommandRunner
     {
         private Command _command;
-        private SqlCommand _sqlCommand;
+        private IDbConnection _connection;
+        private IDbAdaptor _adaptor;
 
-
-        public void Initialise(Command command)
+        public void Initialise(Command command, IDbAdaptor adaptor)
         {
-            _sqlCommand = new SqlCommand();
+            _adaptor = adaptor;
             _command = command;
 
+            _connection = _adaptor.CreateCommand(ConfigurationManager.AppSettings["ConnectionString"], _command.Sql);
 
-            _sqlCommand.CommandText = _command.Sql;
-            _sqlCommand.Connection = new SqlConnection(ConfigurationManager.AppSettings["ConnectionString"]);
-
-            //create parameters
-            foreach (var param in _command.Parameters)
-            {
-                var length = param.Type.GetSqlLength();
-                var type = param.Type.ParseDbType();
-
-                if (length == null)
-                    _sqlCommand.Parameters.Add(param.Name, type);
-                else
-                    _sqlCommand.Parameters.Add(param.Name, type, length.Value);
-            }
+            _adaptor.CreateParameters(_command.Parameters);
         }
 
 
-
+        
         public void SetParameters(GenericParser parser)
         {
             foreach (var param in _command.Parameters)
             {
-                if(parser[param.DatafileColumn] == null)
-                    _sqlCommand.Parameters[param.Name].Value = DBNull.Value;
-                else
-                {
-                    _sqlCommand.Parameters[param.Name].Value = parser[param.DatafileColumn].SqlValue(_sqlCommand.Parameters[param.Name].SqlDbType);
-                }
+                _adaptor.SetParameter(param.Name, parser[param.DatafileColumn]);
             }
         }
 
         public virtual string FailMessage(GenericParser parser)
         {
-            return string.Format("Could not find {0} : {1}", TypeName, GetId(parser));
+            return string.Format("NO ROWS AFFECTED {0} : {1}", _command.Datafile, GetId(parser));
         }
 
         public virtual string SuccessMessage(GenericParser parser)
         {
-            return string.Format("UPDATED {0} : Id {1}", _command.Datafile, GetId(parser));
+            return string.Format("PROCESSED {0} : Id {1}", _command.Datafile, GetId(parser));
         }
 
 
@@ -90,10 +75,8 @@ namespace CsvToSql.Commands
                 parser.MaxBufferSize = 4096;
                 parser.MaxRows = 1000000;
                 parser.TextQualifier = '\"';
-
-
-
-                _sqlCommand.Connection.Open();
+                
+                _connection.Open();
 
                 var count = 0;
 
@@ -106,7 +89,7 @@ namespace CsvToSql.Commands
                     var affected = 0;
                     try
                     {
-                        affected = _sqlCommand.ExecuteNonQuery();
+                        affected = _adaptor.Execute();
                     }
                     catch (Exception ex)
                     {
@@ -126,7 +109,7 @@ namespace CsvToSql.Commands
 
                 }
 
-                _sqlCommand.Connection.Close();
+                _connection.Close();
 
 
             }

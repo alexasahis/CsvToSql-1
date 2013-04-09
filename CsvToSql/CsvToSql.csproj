@@ -56,7 +56,9 @@
     <Compile Include="Commands\CommandReader.cs" />
     <Compile Include="Commands\Command.cs" />
     <Compile Include="Commands\CommandRunner.cs" />
-    <Compile Include="Commands\StringExtensions.cs" />
+    <Compile Include="DbAdaptors\SqlStringExtensions.cs" />
+    <Compile Include="DbAdaptors\IDbAdaptor.cs" />
+    <Compile Include="DbAdaptors\MsSqlServerAdaptor.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

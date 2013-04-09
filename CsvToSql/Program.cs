@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
+using System.Linq;
 using CsvToSql.Commands;
+using CsvToSql.DbAdaptors;
 
 namespace CsvToSql
 {
@@ -18,12 +20,21 @@ namespace CsvToSql
             var summaryList = new Dictionary<string, int >();
 
             var onlyLoggingErrors = bool.Parse(ConfigurationManager.AppSettings["OnlyLogErrors"]);
+            var providerType = ConfigurationManager.AppSettings["DbProvider"].ToLower();
+
+            var adaptorType = typeof (Program).Assembly.GetTypes()
+                                      .Where(t => typeof (IDbAdaptor).IsAssignableFrom(t)
+                                                  && t.Name.ToLower().StartsWith(providerType))
+                                      .First();
+
+
+            var adaptor = (IDbAdaptor) Activator.CreateInstance(adaptorType);
 
             foreach(var command in commands)
             {
                 var commandRunner = new CommandRunner();
-                
-                commandRunner.Initialise(command);
+
+                commandRunner.Initialise(command, adaptor);
 
                 var logFile = new StreamWriter(command.Datafile + ".log");
 
